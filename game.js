@@ -392,5 +392,20 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// Initialize the game
+function updateGlider() {
+    const gliderBody
+    // ... (rest of updateGlider function)
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    world.step(1/60);
+    updateAI();
+    updateGlider();
+    updateWeather();
+    handlePowerUps();
+    renderer.render(scene, camera);
+}
+
+// Make sure to call init() to start the game
 init();
