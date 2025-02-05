@@ -1,8 +1,7 @@
-let scene, camera, renderer, world, playerCar, track;
+let scene, camera, renderer, world, glider;
 const keys = {};
 
 function init() {
-    console.log("Initializing game");
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas') });
@@ -11,104 +10,78 @@ function init() {
     world = new CANNON.World();
     world.gravity.set(0, -9.82, 0);
 
-    createTrack();
-    createPlayerCar();
+    createTerrain();
+    createGlider();
 
-    camera.position.set(0, 10, -20);
-    camera.lookAt(playerCar.position);
+    camera.position.set(0, 200, 50);
+    camera.lookAt(glider.position);
 
-    document.getElementById('startButton').addEventListener('click', startRace);
-    document.getElementById('garageButton').addEventListener('click', openGarage);
-    document.getElementById('multiplayerButton').addEventListener('click', startMultiplayer);
-
-    document.addEventListener('keydown', (e) => keys[e.code] = true);
-    document.addEventListener('keyup', (e) => keys[e.code] = false);
+    document.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+    document.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
 
     animate();
 }
 
-function createTrack() {
-    const trackShape = new THREE.Shape();
-    trackShape.moveTo(0, -50);
-    trackShape.lineTo(50, -50);
-    trackShape.lineTo(50, 50);
-    trackShape.lineTo(-50, 50);
-    trackShape.lineTo(-50, -50);
-    trackShape.lineTo(0, -50);
+function createTerrain() {
+    const geometry = new THREE.PlaneGeometry(1000, 1000, 50, 50);
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+    const terrain = new THREE.Mesh(geometry, material);
+    terrain.rotation.x = -Math.PI / 2;
+    scene.add(terrain);
 
-    const geometry = new THREE.ExtrudeGeometry(trackShape, {
-        steps: 1,
-        depth: 1,
-        bevelEnabled: false
+    const terrainShape = new CANNON.Plane();
+    const terrainBody = new CANNON.Body({ mass: 0 });
+    terrainBody.addShape(terrainShape);
+    terrainBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+    world.addBody(terrainBody);
+}
+
+function createGlider() {
+    const gliderGeometry = new THREE.ConeGeometry(2, 8, 4);
+    const gliderMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+    glider = new THREE.Mesh(gliderGeometry, gliderMaterial);
+    glider.rotation.x = Math.PI / 2;
+    scene.add(glider);
+
+    const gliderShape = new CANNON.Cylinder(0.1, 2, 8, 4);
+    const gliderBody = new CANNON.Body({
+        mass: 100,
+        shape: gliderShape,
+        position: new CANNON.Vec3(0, 500, 0),
+        velocity: new CANNON.Vec3(0, -10, 0)
     });
-
-    const material = new THREE.MeshBasicMaterial({ color: 0x333333 });
-    track = new THREE.Mesh(geometry, material);
-    track.rotation.x = -Math.PI / 2;
-    scene.add(track);
-
-    const trackBody = new CANNON.Body({
-        mass: 0,
-        shape: new CANNON.Plane()
-    });
-    trackBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
-    world.addBody(trackBody);
+    world.addBody(gliderBody);
+    glider.userData.physicsBody = gliderBody;
 }
 
-function createPlayerCar() {
-    const carGeometry = new THREE.BoxGeometry(4, 2, 2);
-    const carMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    playerCar = new THREE.Mesh(carGeometry, carMaterial);
-    scene.add(playerCar);
+function updateGlider() {
+    const gliderBody = glider.userData.physicsBody;
+    const force = 5;
 
-    const carShape = new CANNON.Box(new CANNON.Vec3(2, 1, 1));
-    const carBody = new CANNON.Body({
-        mass: 1500,
-        shape: carShape
-    });
-    carBody.position.set(0, 5, 0);
-    world.addBody(carBody);
-    playerCar.userData.physicsBody = carBody;
-}
+    if (keys['w']) gliderBody.applyForce(new CANNON.Vec3(0, 0, -force), gliderBody.position);
+    if (keys['s']) gliderBody.applyForce(new CANNON.Vec3(0, 0, force), gliderBody.position);
+    if (keys['a']) gliderBody.applyForce(new CANNON.Vec3(-force, 0, 0), gliderBody.position);
+    if (keys['d']) gliderBody.applyForce(new CANNON.Vec3(force, 0, 0), gliderBody.position);
 
-function startRace() {
-    console.log("Race started");
-    // Add race start logic here
-}
-
-function openGarage() {
-    console.log("Garage opened");
-    // Add garage logic here
-}
-
-function startMultiplayer() {
-    console.log("Multiplayer started");
-    // Add multiplayer logic here
-}
-
-function updatePlayerCar() {
-    const carBody = playerCar.userData.physicsBody;
-    
-    if (keys.ArrowUp) carBody.applyForce(new CANNON.Vec3(0, 0, -500), carBody.position);
-    if (keys.ArrowDown) carBody.applyForce(new CANNON.Vec3(0, 0, 300), carBody.position);
-    if (keys.ArrowLeft) carBody.applyTorque(new CANNON.Vec3(0, 10, 0));
-    if (keys.ArrowRight) carBody.applyTorque(new CANNON.Vec3(0, -10, 0));
-
-    playerCar.position.copy(carBody.position);
-    playerCar.quaternion.copy(carBody.quaternion);
+    glider.position.copy(gliderBody.position);
+    glider.quaternion.copy(gliderBody.quaternion);
 
     camera.position.set(
-        playerCar.position.x - 15 * Math.sin(playerCar.rotation.y),
-        playerCar.position.y + 5,
-        playerCar.position.z - 15 * Math.cos(playerCar.rotation.y)
+        glider.position.x,
+        glider.position.y + 10,
+        glider.position.z + 30
     );
-    camera.lookAt(playerCar.position);
+    camera.lookAt(glider.position);
+
+    // Update HUD
+    document.getElementById('altitude').textContent = Math.round(glider.position.y);
+    document.getElementById('speed').textContent = Math.round(gliderBody.velocity.length() * 3.6); // Convert to km/h
 }
 
 function animate() {
     requestAnimationFrame(animate);
     world.step(1/60);
-    updatePlayerCar();
+    updateGlider();
     renderer.render(scene, camera);
 }
 
