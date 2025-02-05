@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced 3D Car Racing Game</title>
+    <title>3D Glider Game</title>
     <style>
         body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
         #gameCanvas { width: 100%; height: 100%; }
@@ -15,47 +15,13 @@
             font-size: 16px;
             text-shadow: 2px 2px 2px rgba(0,0,0,0.5);
         }
-        #minimap {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            width: 200px;
-            height: 200px;
-            background-color: rgba(0,0,0,0.5);
-            border-radius: 50%;
-        }
-        #menu {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(0,0,0,0.8);
-            padding: 20px;
-            border-radius: 10px;
-            color: white;
-            text-align: center;
-        }
-        #menu button {
-            margin: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
-        }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="hud">
+        <div>Altitude: <span id="altitude">0</span> m</div>
         <div>Speed: <span id="speed">0</span> km/h</div>
-        <div>Lap: <span id="lap">1</span>/3</div>
-        <div>Position: <span id="position">1</span>/8</div>
-        <div>Time: <span id="time">0:00.000</span></div>
-    </div>
-    <div id="minimap"></div>
-    <div id="menu">
-        <h2>Advanced 3D Car Racing Game</h2>
-        <button id="startButton">Start Race</button>
-        <button id="garageButton">Garage</button>
-        <button id="multiplayerButton">Multiplayer</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
