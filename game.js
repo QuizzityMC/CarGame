@@ -13,7 +13,7 @@ function init() {
     createTerrain();
     createGlider();
 
-    camera.position.set(0, 200, 50);
+    camera.position.set(0, 510, 50);
     camera.lookAt(glider.position);
 
     document.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
@@ -37,13 +37,30 @@ function createTerrain() {
 }
 
 function createGlider() {
-    const gliderGeometry = new THREE.ConeGeometry(2, 8, 4);
-    const gliderMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+    // Create a more glider-like shape
+    const gliderGeometry = new THREE.BufferGeometry();
+    const vertices = new Float32Array([
+        0, 0, 5,   // nose
+        -10, 0, -5,  // left wing
+        10, 0, -5,   // right wing
+        0, 1, -5     // tail
+    ]);
+    const indices = [
+        0, 1, 2,  // bottom face
+        0, 2, 3,  // right face
+        0, 3, 1,  // left face
+        1, 3, 2   // back face
+    ];
+    gliderGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    gliderGeometry.setIndex(indices);
+    gliderGeometry.computeVertexNormals();
+
+    const gliderMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff, side: THREE.DoubleSide });
     glider = new THREE.Mesh(gliderGeometry, gliderMaterial);
-    glider.rotation.x = Math.PI / 2;
+    glider.position.set(0, 500, 0);
     scene.add(glider);
 
-    const gliderShape = new CANNON.Cylinder(0.1, 2, 8, 4);
+    const gliderShape = new CANNON.Box(new CANNON.Vec3(10, 1, 5));
     const gliderBody = new CANNON.Body({
         mass: 100,
         shape: gliderShape,
@@ -56,12 +73,17 @@ function createGlider() {
 
 function updateGlider() {
     const gliderBody = glider.userData.physicsBody;
-    const force = 5;
+    const liftForce = 9.82 * gliderBody.mass; // Counteract gravity
+    const controlForce = 50;
 
-    if (keys['w']) gliderBody.applyForce(new CANNON.Vec3(0, 0, -force), gliderBody.position);
-    if (keys['s']) gliderBody.applyForce(new CANNON.Vec3(0, 0, force), gliderBody.position);
-    if (keys['a']) gliderBody.applyForce(new CANNON.Vec3(-force, 0, 0), gliderBody.position);
-    if (keys['d']) gliderBody.applyForce(new CANNON.Vec3(force, 0, 0), gliderBody.position);
+    // Apply lift force
+    gliderBody.applyForce(new CANNON.Vec3(0, liftForce, 0), gliderBody.position);
+
+    // Control glider
+    if (keys['w']) gliderBody.applyForce(new CANNON.Vec3(0, controlForce, -controlForce), gliderBody.position);
+    if (keys['s']) gliderBody.applyForce(new CANNON.Vec3(0, -controlForce, controlForce), gliderBody.position);
+    if (keys['a']) gliderBody.applyForce(new CANNON.Vec3(-controlForce, 0, 0), gliderBody.position);
+    if (keys['d']) gliderBody.applyForce(new CANNON.Vec3(controlForce, 0, 0), gliderBody.position);
 
     glider.position.copy(gliderBody.position);
     glider.quaternion.copy(gliderBody.quaternion);
